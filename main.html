@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메신저봇 IDE V22 - Terminal Power-Up</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/selection/active-line.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/hint/show-hint.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/hint/javascript-hint.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Malgun Gothic', sans-serif;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            background: #1e1e1e;
+        }
+
+        .left-panel {
+            flex: 0 0 380px;
+            width: 380px;
+            background-color: #b2c7d9;
+            display: flex;
+            flex-direction: column;
+            min-width: 200px;
+            max-width: 80vw;
+        }
+
+        .chat-header {
+            background: #a9bdce;
+            padding: 10px;
+            font-weight: bold;
+            text-align: center;
+            color: #4b4b4b;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .chat-screen {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .msg-row {
+            display: flex;
+            width: 100%;
+        }
+
+        .msg-row.me {
+            justify-content: flex-end;
+        }
+
+        .msg-row.bot {
+            justify-content: flex-start;
+        }
+
+        .msg-bubble {
+            max-width: 80%;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            line-height: 1.4;
+            word-break: break-all;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .me .msg-bubble {
+            background-color: #ffeb33;
+            color: #000;
+        }
+
+        .bot .msg-bubble {
+            background-color: #ffffff;
+            color: #000;
+        }
+
+        .profile-pic {
+            width: 32px;
+            height: 32px;
+            background: #fff;
+            border-radius: 40%;
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #555;
+            flex-shrink: 0;
+            border: 1px solid #ddd;
+        }
+
+        .input-area {
+            background: #fff;
+            padding: 10px;
+            display: flex;
+            gap: 5px;
+            height: 55px;
+            border-top: 1px solid #ddd;
+        }
+
+        #msgInput {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 2px;
+            outline: none;
+            background: #fcfcfc;
+            font-size: 13px;
+        }
+
+        #sendBtn {
+            padding: 0 15px;
+            background: #ffeb33;
+            border: 1px solid #ddd;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .splitter-v {
+            width: 4px;
+            background-color: #333;
+            cursor: col-resize;
+            z-index: 10;
+            transition: background-color 0.2s;
+        }
+
+        .splitter-v:hover,
+        .splitter-v.active {
+            background-color: #0e639c;
+        }
+
+        .right-panel {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            background-color: #1e1e1e;
+            overflow: hidden;
+        }
+
+        .editor-header {
+            height: 45px;
+            background-color: #252526;
+            color: #cccccc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            border-bottom: 1px solid #333;
+            flex-shrink: 0;
+        }
+
+        .editor-title {
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .editor-icon {
+            color: #f1c40f;
+            font-weight: bold;
+        }
+
+        .apply-btn {
+            background-color: #0e639c;
+            color: #ffffff;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 2px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .apply-btn:hover {
+            background-color: #1177bb;
+        }
+
+        .CodeMirror {
+            flex: 1;
+            height: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .splitter-h {
+            height: 4px;
+            background-color: #333;
+            cursor: row-resize;
+            z-index: 10;
+            transition: background-color 0.2s;
+            display: none;
+        }
+
+        .splitter-h:hover,
+        .splitter-h.active {
+            background-color: #0e639c;
+        }
+
+        .terminal-wrapper {
+            height: 200px;
+            background-color: #1e1e1e;
+            border-top: 1px solid #333;
+            display: none;
+            flex-direction: column;
+            min-height: 50px;
+            max-height: 80vh;
+        }
+
+        .terminal-wrapper.open {
+            display: flex;
+        }
+
+        .terminal-tabs {
+            height: 30px;
+            background: #252526;
+            display: flex;
+            border-bottom: 1px solid #333;
+            flex-shrink: 0;
+        }
+
+        .tab-btn {
+            padding: 0 15px;
+            color: #999;
+            font-size: 12px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            border-right: 1px solid #333;
+            outline: none;
+        }
+
+        .tab-btn.active {
+            color: #fff;
+            background: #1e1e1e;
+            border-top: 2px solid #0e639c;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+        }
+
+        .terminal-content {
+            flex: 1;
+            overflow: hidden;
+            display: none;
+            padding: 5px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+        }
+
+        .terminal-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .log-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 5px;
+            color: #d4d4d4;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .log-item {
+            margin-bottom: 4px;
+            padding: 2px 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .log-item.error {
+            color: #f48771;
+        }
+
+        .log-item.system {
+            color: #4ec9b0;
+        }
+
+        .log-item.info {
+            color: #d4d4d4;
+        }
+
+        .log-time {
+            color: #555;
+            margin-right: 8px;
+            font-size: 11px;
+        }
+
+        .console-input-area {
+            display: flex;
+            border-top: 1px solid #333;
+            padding: 5px;
+            background: #1e1e1e;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .prompt-char {
+            color: #0e639c;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        #consoleInput {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #d4d4d4;
+            outline: none;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+        }
+
+        .status-bar {
+            height: 25px;
+            background-color: #333333;
+            color: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            font-size: 12px;
+            cursor: default;
+            flex-shrink: 0;
+            border-top: 1px solid #252526;
+        }
+
+        .status-left,
+        .status-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .status-item {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-item:hover {
+            color: #fff;
+        }
+
+        .error-count {
+            padding: 0 5px;
+        }
+
+        .error-count.has-error {
+            background-color: transparent !important;
+            color: #ff6b68 !important;
+        }
+
+        .chat-screen::-webkit-scrollbar {
+            display: none;
+        }
+
+        .log-container::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        .log-container::-webkit-scrollbar-thumb {
+            background: #424242;
+            border: 2px solid #1e1e1e;
+            border-radius: 5px;
+            background-clip: content-box;
+        }
+
+        .log-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .CodeMirror-vscrollbar,
+        .CodeMirror-hscrollbar {
+            display: none !important;
+        }
+
+        .CodeMirror-scroll::-webkit-scrollbar {
+            width: 14px;
+            height: 14px;
+            background: transparent;
+        }
+
+        .CodeMirror-scroll::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            border: 3px solid transparent;
+            background-clip: content-box;
+        }
+
+        .CodeMirror-scroll::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .CodeMirror-scroll::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+
+        .cm-s-vscode-dark.CodeMirror {
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+
+        .cm-s-vscode-dark .CodeMirror-gutters {
+            background: #1e1e1e;
+            border-right: 1px solid #1e1e1e;
+        }
+
+        .cm-s-vscode-dark .CodeMirror-linenumber {
+            color: #858585;
+        }
+
+        .cm-s-vscode-dark .CodeMirror-cursor {
+            border-left: 1px solid #d4d4d4;
+        }
+
+        .cm-s-vscode-dark .CodeMirror-selected {
+            background-color: #3a3d41 !important;
+        }
+
+        .cm-s-vscode-dark .CodeMirror-focused .CodeMirror-selected {
+            background-color: #3a3d41 !important;
+        }
+
+        .cm-s-vscode-dark .CodeMirror-activeline-background {
+            background: #282828 !important;
+        }
+
+        .cm-s-vscode-dark span.cm-keyword {
+            color: #569cd6 !important;
+            font-weight: bold;
+        }
+
+        .cm-s-vscode-dark span.cm-def {
+            color: #dcdcaa !important;
+        }
+
+        .cm-s-vscode-dark span.cm-variable {
+            color: #9cdcfe !important;
+        }
+
+        .cm-s-vscode-dark span.cm-variable-2 {
+            color: #9cdcfe !important;
+        }
+
+        .cm-s-vscode-dark span.cm-variable-3 {
+            color: #9cdcfe !important;
+        }
+
+        .cm-s-vscode-dark span.cm-property {
+            color: #9cdcfe !important;
+        }
+
+        .cm-s-vscode-dark span.cm-builtin {
+            color: #4ec9b0 !important;
+        }
+
+        .cm-s-vscode-dark span.cm-string {
+            color: #ce9178 !important;
+        }
+
+        .cm-s-vscode-dark span.cm-number {
+            color: #b5cea8 !important;
+        }
+
+        .cm-s-vscode-dark span.cm-comment {
+            color: #6a9955 !important;
+        }
+
+        .cm-s-vscode-dark span.cm-operator {
+            color: #d4d4d4 !important;
+        }
+
+        .cm-s-vscode-dark span.cm-atom {
+            color: #569cd6 !important;
+        }
+
+        .CodeMirror-hints {
+            background: #252526;
+            border: 1px solid #454545;
+        }
+
+        .CodeMirror-hint {
+            color: #cccccc;
+            padding: 4px 8px;
+        }
+
+        .CodeMirror-hint-active {
+            background: #094771;
+            color: #ffffff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="left-panel" id="leftPanel">
+        <div class="chat-header">DEBUG ROOM</div>
+        <div class="chat-screen" id="chatScreen">
+            <div class="msg-row bot">
+                <div class="profile-pic">BOT</div>
+                <div class="msg-bubble">터미널 기능이 강화되었습니다.</div>
+            </div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="msgInput" placeholder="메시지 입력 (Enter)"
+                onkeypress="if(event.keyCode==13) Simulator.ui.triggerSend();">
+            <button id="sendBtn" onclick="Simulator.ui.triggerSend()">전송</button>
+        </div>
+    </div>
+
+    <div class="splitter-v" id="splitterV"></div>
+
+    <div class="right-panel">
+        <div class="editor-header">
+            <div class="editor-title"><span class="editor-icon">JS</span> script.js</div>
+            <button class="apply-btn" onclick="Simulator.bot.compile()">▷ 실행 및 적용 (F5)</button>
+        </div>
+
+        <textarea id="codeEditor"></textarea>
+
+        <div class="splitter-h" id="splitterH"></div>
+
+        <div class="terminal-wrapper" id="terminalWrapper">
+            <div class="terminal-tabs">
+                <button class="tab-btn active" id="btn-system" onclick="Simulator.terminal.switchTab('system')">시스템
+                    로그</button>
+                <button class="tab-btn" id="btn-console" onclick="Simulator.terminal.switchTab('console')">콘솔
+                    (Interactive)</button>
+            </div>
+            <div class="terminal-content active" id="tab-system">
+                <div class="log-container" id="systemLogContainer"></div>
+            </div>
+            <div class="terminal-content" id="tab-console">
+                <div class="log-container" id="consoleLogContainer"></div>
+                <div class="console-input-area">
+                    <span class="prompt-char">&gt;</span>
+                    <input type="text" id="consoleInput" placeholder="자바스크립트 코드 입력 (↑↓ History)" autocomplete="off">
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-left">
+                <div class="status-item" onclick="Simulator.terminal.toggle()" title="터미널 열기/닫기">
+                    <span class="status-icon">📺</span> Terminal
+                </div>
+                <div class="status-item error-count" id="statusError" title="에러 개수 (클릭 시 로그 확인)"
+                    onclick="Simulator.terminal.showErrorTab()">
+                    ⓧ 0
+                </div>
+            </div>
+            <div class="status-right">
+                <div class="status-item" id="statusLineInfo">Ln 1, Col 1</div>
+                <div class="status-item">UTF-8</div>
+                <div class="status-item">JavaScript</div>
+            </div>
+        </div>
+    </div>
+
+    <script id="bot-logic">
+        function response(room, msg, sender, isGroupChat, replier, imageDB, packageName) {
+
+            console.log("[수신] " + msg);
+
+            if (msg == "/안녕" || msg == "안녕") {
+                replier.reply("반갑습니다, " + sender + "님!");
+            }
+        }
+    </script>
+
+    <script>
+        const nativeConsoleLog = console.log;
+        const Simulator = {
+            layout: {
+                init: function () {
+                    this.initVerticalSplitter();
+                    this.initHorizontalSplitter();
+                },
+                initVerticalSplitter: function () {
+                    const splitter = document.getElementById('splitterV');
+                    const leftPanel = document.getElementById('leftPanel');
+                    let isResizing = false;
+                    splitter.addEventListener('mousedown', (e) => { isResizing = true; splitter.classList.add('active'); document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; });
+                    document.addEventListener('mousemove', (e) => {
+                        if (!isResizing) return;
+                        let newWidth = e.clientX;
+                        if (newWidth < 200) newWidth = 200;
+                        if (newWidth > window.innerWidth - 100) newWidth = window.innerWidth - 100;
+                        leftPanel.style.width = newWidth + 'px';
+                        leftPanel.style.flex = `0 0 ${newWidth}px`;
+                    });
+                    document.addEventListener('mouseup', () => { if (isResizing) { isResizing = false; splitter.classList.remove('active'); document.body.style.cursor = 'default'; document.body.style.userSelect = 'auto'; } });
+                },
+                initHorizontalSplitter: function () {
+                    const splitter = document.getElementById('splitterH');
+                    const terminal = document.getElementById('terminalWrapper');
+                    let isResizing = false;
+                    splitter.addEventListener('mousedown', (e) => { if (!terminal.classList.contains('open')) return; isResizing = true; splitter.classList.add('active'); document.body.style.cursor = 'row-resize'; document.body.style.userSelect = 'none'; });
+                    document.addEventListener('mousemove', (e) => {
+                        if (!isResizing) return;
+                        const statusBarHeight = 25;
+                        let newHeight = window.innerHeight - e.clientY - statusBarHeight;
+                        if (newHeight < 50) newHeight = 50;
+                        if (newHeight > window.innerHeight - 100) newHeight = window.innerHeight - 100;
+                        terminal.style.height = newHeight + 'px';
+                    });
+                    document.addEventListener('mouseup', () => { if (isResizing) { isResizing = false; splitter.classList.remove('active'); document.body.style.cursor = 'default'; document.body.style.userSelect = 'auto'; } });
+                }
+            },
+            editor: {
+                instance: null,
+                init: function (textareaId, sourceId) {
+                    this.instance = CodeMirror.fromTextArea(document.getElementById(textareaId), {
+                        mode: "javascript", theme: "vscode-dark", lineNumbers: true, styleActiveLine: true, matchBrackets: true, autoCloseBrackets: true, indentUnit: 4, lineWrapping: false,
+                        extraKeys: { "Ctrl-Space": "autocomplete", "Ctrl-/": (cm) => this.toggleComment(cm), "Cmd-/": (cm) => this.toggleComment(cm) }
+                    });
+                    this.instance.setValue(this.getCleanSource(sourceId));
+                    this.instance.on("keyup", (cm, event) => {
+                        if (!cm.state.completionActive && !event.ctrlKey && !event.altKey && !event.metaKey && (event.key.length === 1 && /[a-zA-Z0-9._]/.test(event.key))) { CodeMirror.commands.autocomplete(cm, null, { completeSingle: false }); }
+                    });
+                    this.instance.on("cursorActivity", () => {
+                        const pos = this.instance.getCursor();
+                        document.getElementById('statusLineInfo').innerText = `Ln ${pos.line + 1}, Col ${pos.ch + 1}`;
+                    });
+                },
+                toggleComment: function (cm) {
+                    var from = cm.getCursor("from"), to = cm.getCursor("to");
+                    var startLine = from.line, endLine = to.line;
+                    if (to.ch === 0 && to.line > from.line) endLine--;
+                    var allCommented = true;
+                    for (var i = startLine; i <= endLine; i++) {
+                        if (cm.getLine(i).trim().length === 0) continue;
+                        if (!/^\s*\/\//.test(cm.getLine(i))) { allCommented = false; break; }
+                    }
+                    cm.operation(function () {
+                        for (var i = startLine; i <= endLine; i++) {
+                            var text = cm.getLine(i);
+                            if (text.trim().length === 0) continue;
+                            var match = text.match(/^(\s*)(.*)/);
+                            var indent = match[1], content = match[2];
+                            if (allCommented) {
+                                if (content.startsWith("// ")) cm.replaceRange("", { line: i, ch: indent.length }, { line: i, ch: indent.length + 3 });
+                                else if (content.startsWith("//")) cm.replaceRange("", { line: i, ch: indent.length }, { line: i, ch: indent.length + 2 });
+                            } else {
+                                if (!content.startsWith("//")) cm.replaceRange("// ", { line: i, ch: indent.length });
+                            }
+                        }
+                    });
+                },
+                getValue: function () { return this.instance.getValue(); },
+                getCleanSource: function (scriptId) {
+                    const el = document.getElementById(scriptId); if (!el) return "";
+                    let lines = el.textContent.split('\n');
+                    while (lines.length > 0 && lines[0].trim() === '') lines.shift();
+                    while (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+                    if (lines.length === 0) return "";
+                    const indentLengths = lines.filter(l => l.trim().length > 0).map(l => (l.match(/^(\s*)/) || [''])[0].length);
+                    const minIndent = indentLengths.length > 0 ? Math.min(...indentLengths) : 0;
+                    return lines.map(l => l.length >= minIndent ? l.substring(minIndent) : l).join('\n');
+                }
+            },
+            ui: {
+                appendMsg: function (text, type) {
+                    const chatScreen = document.getElementById('chatScreen');
+                    const row = document.createElement('div');
+                    let content = '';
+                    if (type === 'me') {
+                        row.className = 'msg-row me';
+                        content = `<div class="msg-bubble">${text}</div>`;
+                    } else if (type === 'bot') {
+                        row.className = 'msg-row bot';
+                        content = `<div class="profile-pic">BOT</div><div class="msg-bubble">${text.replace(/\n/g, '<br>')}</div>`;
+                    } else if (type === 'system' || type === 'error') {
+                        Simulator.terminal.logSystem(text, type);
+                        return;
+                    }
+                    row.innerHTML = content;
+                    chatScreen.appendChild(row);
+                    chatScreen.scrollTop = chatScreen.scrollHeight;
+                },
+                triggerSend: function () {
+                    const input = document.getElementById('msgInput');
+                    const msg = input.value;
+                    if (!msg.trim()) return;
+                    this.simulateUserSend(msg);
+                    input.value = '';
+                },
+                simulateUserSend: function (msg) {
+                    this.appendMsg(msg, 'me');
+                    Simulator.bot.run("테스트방", msg, "나(User)", false);
+                }
+            },
+            terminal: {
+                errorCount: 0,
+                history: [],
+                historyIndex: -1,
+
+                init: function () {
+                    const input = document.getElementById('consoleInput');
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            this.evalInput();
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            if (this.historyIndex > 0) {
+                                this.historyIndex--;
+                                input.value = this.history[this.historyIndex];
+                            }
+                        } else if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            if (this.historyIndex < this.history.length - 1) {
+                                this.historyIndex++;
+                                input.value = this.history[this.historyIndex];
+                            } else {
+                                this.historyIndex = this.history.length;
+                                input.value = '';
+                            }
+                        }
+                    });
+                },
+
+                toggle: function (forceOpen = null) {
+                    const wrapper = document.getElementById('terminalWrapper');
+                    const splitter = document.getElementById('splitterH');
+                    if (forceOpen === true) { wrapper.classList.add('open'); splitter.style.display = 'block'; }
+                    else if (forceOpen === false) { wrapper.classList.remove('open'); splitter.style.display = 'none'; }
+                    else { wrapper.classList.toggle('open'); splitter.style.display = (wrapper.classList.contains('open')) ? 'block' : 'none'; }
+                },
+                switchTab: function (tabName) {
+                    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                    document.getElementById(`btn-${tabName}`).classList.add('active');
+                    document.querySelectorAll('.terminal-content').forEach(con => con.classList.remove('active'));
+                    document.getElementById(`tab-${tabName}`).classList.add('active');
+                },
+                showErrorTab: function () { this.toggle(true); this.switchTab('system'); },
+                logSystem: function (msg, type) {
+                    const container = document.getElementById('systemLogContainer');
+                    const item = document.createElement('div');
+                    const time = new Date().toLocaleTimeString();
+                    item.className = `log-item ${type}`;
+                    item.innerHTML = `<span class="log-time">[${time}]</span> ${msg}`;
+                    container.appendChild(item);
+                    container.scrollTop = container.scrollHeight;
+                    if (type === 'error') { this.errorCount++; this.updateErrorCount(); }
+                },
+                logConsole: function (args) {
+                    const container = document.getElementById('consoleLogContainer');
+                    const item = document.createElement('div');
+                    item.className = 'log-item info';
+                    const text = Array.from(args).map(arg => { if (typeof arg === 'object') return JSON.stringify(arg); return String(arg); }).join(' ');
+                    item.innerText = text;
+                    container.appendChild(item);
+                    container.scrollTop = container.scrollHeight;
+                },
+                evalInput: function () {
+                    const input = document.getElementById('consoleInput');
+                    const code = input.value;
+                    if (!code.trim()) return;
+
+                    this.history.push(code);
+                    this.historyIndex = this.history.length;
+
+                    this.logConsole([`> ${code}`]);
+                    try { const result = window.eval(code); if (result !== undefined) this.logConsole([`< ${result}`]); }
+                    catch (e) { this.logConsole([`Error: ${e.message}`]); }
+                    input.value = '';
+                },
+                updateErrorCount: function () {
+                    const el = document.getElementById('statusError');
+                    el.innerText = `ⓧ ${this.errorCount}`;
+                    if (this.errorCount > 0) el.classList.add('has-error');
+                    else el.classList.remove('has-error');
+                },
+                clearError: function () {
+                    this.errorCount = 0;
+                    this.updateErrorCount();
+                }
+            },
+            bot: {
+                activeFunction: null,
+                initHook: function () {
+                    console.log = function (...args) {
+                        nativeConsoleLog.apply(console, args);
+                        Simulator.terminal.logConsole(args);
+                    };
+
+                    window.send = function (msg) {
+                        Simulator.ui.simulateUserSend(msg);
+                        return `Sent: "${msg}"`;
+                    };
+                },
+                compile: function () {
+                    Simulator.terminal.clearError();
+                    const code = Simulator.editor.getValue();
+                    try {
+                        window.eval(code);
+                        if (typeof response !== 'function') throw new Error("response 함수가 없습니다.");
+                        this.activeFunction = response;
+                        Simulator.terminal.logSystem("✅ 코드가 성공적으로 적용되었습니다.", "system");
+                    } catch (e) {
+                        console.error(e);
+                        Simulator.terminal.logSystem(`컴파일 에러: ${e.message}`, "error");
+                    }
+                },
+                run: function (room, msg, sender, isGroupChat) {
+                    if (!this.activeFunction) { Simulator.terminal.logSystem("봇 코드가 준비되지 않았습니다.", "error"); return; }
+                    const replier = { reply: function (text) { setTimeout(() => Simulator.ui.appendMsg(text, 'bot'), 100); } };
+                    window.room = room; window.msg = msg; window.sender = sender; window.isGroupChat = isGroupChat; window.replier = replier;
+                    try { this.activeFunction(room, msg, sender, isGroupChat, replier, null, null); }
+                    catch (e) { Simulator.terminal.logSystem(`런타임 에러: ${e.message}`, "error"); }
+                }
+            }
+        };
+
+        window.onload = function () {
+            Simulator.layout.init();
+            Simulator.editor.init("codeEditor", "bot-logic");
+            Simulator.terminal.init();
+            Simulator.bot.initHook();
+            Simulator.bot.compile();
+        };
+
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey && e.key === 's') || e.key === 'F5') {
+                e.preventDefault();
+                Simulator.bot.compile();
+            }
+        });
+    </script>
+</body>
+
+</html>
