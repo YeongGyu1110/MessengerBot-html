@@ -4,8 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>메신저봇 IDE V22 - Terminal Power-Up</title>
-
+    <title>메신저봇 IDE V26 - Terminal Shortcut</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
@@ -525,11 +524,11 @@
 <body>
 
     <div class="left-panel" id="leftPanel">
-        <div class="chat-header">DEBUG ROOM</div>
+        <div class="chat-header">Bot Simulator V26</div>
         <div class="chat-screen" id="chatScreen">
             <div class="msg-row bot">
                 <div class="profile-pic">BOT</div>
-                <div class="msg-bubble">터미널 기능이 강화되었습니다.</div>
+                <div class="msg-bubble">단축키 추가: Ctrl + ` (백틱)<br>터미널을 빠르게 열고 닫아보세요!</div>
             </div>
         </div>
         <div class="input-area">
@@ -546,11 +545,8 @@
             <div class="editor-title"><span class="editor-icon">JS</span> script.js</div>
             <button class="apply-btn" onclick="Simulator.bot.compile()">▷ 실행 및 적용 (F5)</button>
         </div>
-
         <textarea id="codeEditor"></textarea>
-
         <div class="splitter-h" id="splitterH"></div>
-
         <div class="terminal-wrapper" id="terminalWrapper">
             <div class="terminal-tabs">
                 <button class="tab-btn active" id="btn-system" onclick="Simulator.terminal.switchTab('system')">시스템
@@ -569,7 +565,6 @@
                 </div>
             </div>
         </div>
-
         <div class="status-bar">
             <div class="status-left">
                 <div class="status-item" onclick="Simulator.terminal.toggle()" title="터미널 열기/닫기">
@@ -593,268 +588,80 @@
 
             console.log("[수신] " + msg);
 
-            if (msg == "/안녕" || msg == "안녕") {
-                replier.reply("반갑습니다, " + sender + "님!");
+            if (msg == "/안녕") {
+                replier.reply("안녕하세요!");
             }
         }
     </script>
 
     <script>
         const nativeConsoleLog = console.log;
+
+        function customHint(cm) { var defaultHints = CodeMirror.hint.javascript(cm) || { list: [] }; var cursor = cm.getCursor(); var token = cm.getTokenAt(cursor); var currentWord = token.string; var lineContent = cm.getLine(cursor.line); var indentMatch = lineContent.match(/^\s*/); var currentIndent = indentMatch ? indentMatch[0] : ""; var textBeforeCursor = lineContent.slice(0, cursor.ch); var isReplierContext = textBeforeCursor.trim().endsWith("replier."); var isReplierReContext = textBeforeCursor.trim().endsWith("replier." + currentWord) && currentWord.startsWith("r"); var snippets = [{ text: isReplierContext || isReplierReContext ? 'reply("");' : 'replier.reply("");', displayText: 'replier.reply("");', hint: function (cm, self, data) { cm.replaceRange(data.text, self.from, self.to); var offset = data.text.length - 3; var pos = cm.getCursor(); cm.setCursor({ line: pos.line, ch: pos.ch - 3 }); } }, { text: `if () {\n${currentIndent}    \n${currentIndent}}`, displayText: 'if (...) { }', hint: function (cm, self, data) { cm.replaceRange(data.text, self.from, self.to); var pos = cm.getCursor(); cm.setCursor({ line: pos.line - 2, ch: currentIndent.length + 4 }); } }, { text: `for (var i = 0; i < length; i++) {\n${currentIndent}    \n${currentIndent}}`, displayText: 'for (i) {}', hint: function (cm, self, data) { cm.replaceRange(data.text, self.from, self.to); var pos = cm.getCursor(); cm.setCursor({ line: pos.line - 2, ch: currentIndent.length + 20 }); } }, { text: `function name(args) {\n${currentIndent}    \n${currentIndent}}`, displayText: 'function name(args) {...}', hint: function (cm, self, data) { cm.replaceRange(data.text, self.from, self.to); var pos = cm.getCursor(); cm.setCursor({ line: pos.line - 2, ch: currentIndent.length + 9 }); } }]; var matchingSnippets = snippets.filter(s => { if (isReplierContext && s.displayText.includes('replier.reply')) return true; return !currentWord || s.displayText.toLowerCase().startsWith(currentWord.toLowerCase()) || s.text.startsWith(currentWord); }); var mergedList = matchingSnippets.concat(defaultHints.list); return { list: mergedList, from: CodeMirror.Pos(cursor.line, token.start), to: CodeMirror.Pos(cursor.line, cursor.ch) }; }
+
         const Simulator = {
             layout: {
-                init: function () {
-                    this.initVerticalSplitter();
-                    this.initHorizontalSplitter();
-                },
-                initVerticalSplitter: function () {
-                    const splitter = document.getElementById('splitterV');
-                    const leftPanel = document.getElementById('leftPanel');
-                    let isResizing = false;
-                    splitter.addEventListener('mousedown', (e) => { isResizing = true; splitter.classList.add('active'); document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; });
-                    document.addEventListener('mousemove', (e) => {
-                        if (!isResizing) return;
-                        let newWidth = e.clientX;
-                        if (newWidth < 200) newWidth = 200;
-                        if (newWidth > window.innerWidth - 100) newWidth = window.innerWidth - 100;
-                        leftPanel.style.width = newWidth + 'px';
-                        leftPanel.style.flex = `0 0 ${newWidth}px`;
-                    });
-                    document.addEventListener('mouseup', () => { if (isResizing) { isResizing = false; splitter.classList.remove('active'); document.body.style.cursor = 'default'; document.body.style.userSelect = 'auto'; } });
-                },
-                initHorizontalSplitter: function () {
-                    const splitter = document.getElementById('splitterH');
-                    const terminal = document.getElementById('terminalWrapper');
-                    let isResizing = false;
-                    splitter.addEventListener('mousedown', (e) => { if (!terminal.classList.contains('open')) return; isResizing = true; splitter.classList.add('active'); document.body.style.cursor = 'row-resize'; document.body.style.userSelect = 'none'; });
-                    document.addEventListener('mousemove', (e) => {
-                        if (!isResizing) return;
-                        const statusBarHeight = 25;
-                        let newHeight = window.innerHeight - e.clientY - statusBarHeight;
-                        if (newHeight < 50) newHeight = 50;
-                        if (newHeight > window.innerHeight - 100) newHeight = window.innerHeight - 100;
-                        terminal.style.height = newHeight + 'px';
-                    });
-                    document.addEventListener('mouseup', () => { if (isResizing) { isResizing = false; splitter.classList.remove('active'); document.body.style.cursor = 'default'; document.body.style.userSelect = 'auto'; } });
-                }
+                init: function () { this.initVerticalSplitter(); this.initHorizontalSplitter(); },
+                initVerticalSplitter: function () { const splitter = document.getElementById('splitterV'), leftPanel = document.getElementById('leftPanel'); let isResizing = false; splitter.addEventListener('mousedown', () => { isResizing = true; splitter.classList.add('active'); document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; }); document.addEventListener('mousemove', (e) => { if (!isResizing) return; let newWidth = e.clientX; if (newWidth < 200) newWidth = 200; if (newWidth > window.innerWidth - 100) newWidth = window.innerWidth - 100; leftPanel.style.width = newWidth + 'px'; leftPanel.style.flex = `0 0 ${newWidth}px`; }); document.addEventListener('mouseup', () => { if (isResizing) { isResizing = false; splitter.classList.remove('active'); document.body.style.cursor = 'default'; document.body.style.userSelect = 'auto'; } }); },
+                initHorizontalSplitter: function () { const splitter = document.getElementById('splitterH'), terminal = document.getElementById('terminalWrapper'); let isResizing = false; splitter.addEventListener('mousedown', () => { if (!terminal.classList.contains('open')) return; isResizing = true; splitter.classList.add('active'); document.body.style.cursor = 'row-resize'; document.body.style.userSelect = 'none'; }); document.addEventListener('mousemove', (e) => { if (!isResizing) return; const statusBarHeight = 25; let newHeight = window.innerHeight - e.clientY - statusBarHeight; if (newHeight < 50) newHeight = 50; if (newHeight > window.innerHeight - 100) newHeight = window.innerHeight - 100; terminal.style.height = newHeight + 'px'; }); document.addEventListener('mouseup', () => { if (isResizing) { isResizing = false; splitter.classList.remove('active'); document.body.style.cursor = 'default'; document.body.style.userSelect = 'auto'; } }); }
             },
             editor: {
                 instance: null,
                 init: function (textareaId, sourceId) {
                     this.instance = CodeMirror.fromTextArea(document.getElementById(textareaId), {
                         mode: "javascript", theme: "vscode-dark", lineNumbers: true, styleActiveLine: true, matchBrackets: true, autoCloseBrackets: true, indentUnit: 4, lineWrapping: false,
-                        extraKeys: { "Ctrl-Space": "autocomplete", "Ctrl-/": (cm) => this.toggleComment(cm), "Cmd-/": (cm) => this.toggleComment(cm) }
+                        extraKeys: {
+                            "Ctrl-Space": "autocomplete",
+                            "Ctrl-/": (cm) => this.toggleComment(cm),
+                            "Cmd-/": (cm) => this.toggleComment(cm),
+                            "Ctrl-L": (cm) => this.selectLine(cm),
+                            "Cmd-L": (cm) => this.selectLine(cm),
+                            "Ctrl-`": () => Simulator.terminal.toggle(),
+                            "Cmd-`": () => Simulator.terminal.toggle()
+                        },
+                        hintOptions: { hint: customHint }
                     });
                     this.instance.setValue(this.getCleanSource(sourceId));
-                    this.instance.on("keyup", (cm, event) => {
-                        if (!cm.state.completionActive && !event.ctrlKey && !event.altKey && !event.metaKey && (event.key.length === 1 && /[a-zA-Z0-9._]/.test(event.key))) { CodeMirror.commands.autocomplete(cm, null, { completeSingle: false }); }
-                    });
-                    this.instance.on("cursorActivity", () => {
-                        const pos = this.instance.getCursor();
-                        document.getElementById('statusLineInfo').innerText = `Ln ${pos.line + 1}, Col ${pos.ch + 1}`;
-                    });
+                    this.instance.on("keyup", (cm, event) => { if (!cm.state.completionActive && !event.ctrlKey && !event.altKey && !event.metaKey && (event.key.length === 1 && /[a-zA-Z0-9._]/.test(event.key))) { CodeMirror.commands.autocomplete(cm, null, { completeSingle: false }); } });
+                    this.instance.on("cursorActivity", () => { const pos = this.instance.getCursor(); document.getElementById('statusLineInfo').innerText = `Ln ${pos.line + 1}, Col ${pos.ch + 1}`; });
                 },
-                toggleComment: function (cm) {
-                    var from = cm.getCursor("from"), to = cm.getCursor("to");
-                    var startLine = from.line, endLine = to.line;
-                    if (to.ch === 0 && to.line > from.line) endLine--;
-                    var allCommented = true;
-                    for (var i = startLine; i <= endLine; i++) {
-                        if (cm.getLine(i).trim().length === 0) continue;
-                        if (!/^\s*\/\//.test(cm.getLine(i))) { allCommented = false; break; }
-                    }
-                    cm.operation(function () {
-                        for (var i = startLine; i <= endLine; i++) {
-                            var text = cm.getLine(i);
-                            if (text.trim().length === 0) continue;
-                            var match = text.match(/^(\s*)(.*)/);
-                            var indent = match[1], content = match[2];
-                            if (allCommented) {
-                                if (content.startsWith("// ")) cm.replaceRange("", { line: i, ch: indent.length }, { line: i, ch: indent.length + 3 });
-                                else if (content.startsWith("//")) cm.replaceRange("", { line: i, ch: indent.length }, { line: i, ch: indent.length + 2 });
-                            } else {
-                                if (!content.startsWith("//")) cm.replaceRange("// ", { line: i, ch: indent.length });
-                            }
-                        }
-                    });
-                },
+                toggleComment: function (cm) { var from = cm.getCursor("from"), to = cm.getCursor("to"); var startLine = from.line, endLine = to.line; if (to.ch === 0 && to.line > from.line) endLine--; var allCommented = true; for (var i = startLine; i <= endLine; i++) { if (cm.getLine(i).trim().length === 0) continue; if (!/^\s*\/\//.test(cm.getLine(i))) { allCommented = false; break; } } cm.operation(function () { for (var i = startLine; i <= endLine; i++) { var text = cm.getLine(i); if (text.trim().length === 0) continue; var match = text.match(/^(\s*)(.*)/); var indent = match[1], content = match[2]; if (allCommented) { if (content.startsWith("// ")) cm.replaceRange("", { line: i, ch: indent.length }, { line: i, ch: indent.length + 3 }); else if (content.startsWith("//")) cm.replaceRange("", { line: i, ch: indent.length }, { line: i, ch: indent.length + 2 }); } else { if (!content.startsWith("//")) cm.replaceRange("// ", { line: i, ch: indent.length }); } } }); },
+                selectLine: function (cm) { var doc = cm.getDoc(); var selection = doc.listSelections()[0]; if (doc.somethingSelected() && selection.anchor.ch === 0 && selection.head.ch === 0 && selection.anchor.line !== selection.head.line) { var newHeadLine = selection.head.line + 1; if (newHeadLine <= doc.lineCount()) { doc.setSelection(selection.anchor, { line: newHeadLine, ch: 0 }); } } else { var line = selection.head.line; doc.setSelection({ line: line, ch: 0 }, { line: line + 1, ch: 0 }); } },
                 getValue: function () { return this.instance.getValue(); },
-                getCleanSource: function (scriptId) {
-                    const el = document.getElementById(scriptId); if (!el) return "";
-                    let lines = el.textContent.split('\n');
-                    while (lines.length > 0 && lines[0].trim() === '') lines.shift();
-                    while (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
-                    if (lines.length === 0) return "";
-                    const indentLengths = lines.filter(l => l.trim().length > 0).map(l => (l.match(/^(\s*)/) || [''])[0].length);
-                    const minIndent = indentLengths.length > 0 ? Math.min(...indentLengths) : 0;
-                    return lines.map(l => l.length >= minIndent ? l.substring(minIndent) : l).join('\n');
-                }
+                getCleanSource: function (scriptId) { const el = document.getElementById(scriptId); if (!el) return ""; let lines = el.textContent.split('\n'); while (lines.length > 0 && lines[0].trim() === '') lines.shift(); while (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop(); if (lines.length === 0) return ""; const indentLengths = lines.filter(l => l.trim().length > 0).map(l => (l.match(/^(\s*)/) || [''])[0].length); const minIndent = indentLengths.length > 0 ? Math.min(...indentLengths) : 0; return lines.map(l => l.length >= minIndent ? l.substring(minIndent) : l).join('\n'); }
             },
             ui: {
-                appendMsg: function (text, type) {
-                    const chatScreen = document.getElementById('chatScreen');
-                    const row = document.createElement('div');
-                    let content = '';
-                    if (type === 'me') {
-                        row.className = 'msg-row me';
-                        content = `<div class="msg-bubble">${text}</div>`;
-                    } else if (type === 'bot') {
-                        row.className = 'msg-row bot';
-                        content = `<div class="profile-pic">BOT</div><div class="msg-bubble">${text.replace(/\n/g, '<br>')}</div>`;
-                    } else if (type === 'system' || type === 'error') {
-                        Simulator.terminal.logSystem(text, type);
-                        return;
-                    }
-                    row.innerHTML = content;
-                    chatScreen.appendChild(row);
-                    chatScreen.scrollTop = chatScreen.scrollHeight;
-                },
-                triggerSend: function () {
-                    const input = document.getElementById('msgInput');
-                    const msg = input.value;
-                    if (!msg.trim()) return;
-                    this.simulateUserSend(msg);
-                    input.value = '';
-                },
-                simulateUserSend: function (msg) {
-                    this.appendMsg(msg, 'me');
-                    Simulator.bot.run("테스트방", msg, "나(User)", false);
-                }
+                appendMsg: function (text, type) { const chatScreen = document.getElementById('chatScreen'); const row = document.createElement('div'); let content = ''; if (type === 'me') { row.className = 'msg-row me'; content = `<div class="msg-bubble">${text}</div>`; } else if (type === 'bot') { row.className = 'msg-row bot'; content = `<div class="profile-pic">BOT</div><div class="msg-bubble">${text.replace(/\n/g, '<br>')}</div>`; } else if (type === 'system' || type === 'error') { Simulator.terminal.logSystem(text, type); return; } row.innerHTML = content; chatScreen.appendChild(row); chatScreen.scrollTop = chatScreen.scrollHeight; },
+                triggerSend: function () { const input = document.getElementById('msgInput'); const msg = input.value; if (!msg.trim()) return; this.simulateUserSend(msg); input.value = ''; },
+                simulateUserSend: function (msg) { this.appendMsg(msg, 'me'); Simulator.bot.run("테스트방", msg, "나(User)", false); }
             },
             terminal: {
-                errorCount: 0,
-                history: [],
-                historyIndex: -1,
-
-                init: function () {
-                    const input = document.getElementById('consoleInput');
-                    input.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter') {
-                            this.evalInput();
-                        } else if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            if (this.historyIndex > 0) {
-                                this.historyIndex--;
-                                input.value = this.history[this.historyIndex];
-                            }
-                        } else if (e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            if (this.historyIndex < this.history.length - 1) {
-                                this.historyIndex++;
-                                input.value = this.history[this.historyIndex];
-                            } else {
-                                this.historyIndex = this.history.length;
-                                input.value = '';
-                            }
-                        }
-                    });
-                },
-
-                toggle: function (forceOpen = null) {
-                    const wrapper = document.getElementById('terminalWrapper');
-                    const splitter = document.getElementById('splitterH');
-                    if (forceOpen === true) { wrapper.classList.add('open'); splitter.style.display = 'block'; }
-                    else if (forceOpen === false) { wrapper.classList.remove('open'); splitter.style.display = 'none'; }
-                    else { wrapper.classList.toggle('open'); splitter.style.display = (wrapper.classList.contains('open')) ? 'block' : 'none'; }
-                },
-                switchTab: function (tabName) {
-                    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-                    document.getElementById(`btn-${tabName}`).classList.add('active');
-                    document.querySelectorAll('.terminal-content').forEach(con => con.classList.remove('active'));
-                    document.getElementById(`tab-${tabName}`).classList.add('active');
-                },
+                errorCount: 0, history: [], historyIndex: -1,
+                init: function () { const input = document.getElementById('consoleInput'); input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { this.evalInput(); } else if (e.key === 'ArrowUp') { e.preventDefault(); if (this.historyIndex > 0) { this.historyIndex--; input.value = this.history[this.historyIndex]; } } else if (e.key === 'ArrowDown') { e.preventDefault(); if (this.historyIndex < this.history.length - 1) { this.historyIndex++; input.value = this.history[this.historyIndex]; } else { this.historyIndex = this.history.length; input.value = ''; } } }); },
+                toggle: function (forceOpen = null) { const wrapper = document.getElementById('terminalWrapper'); const splitter = document.getElementById('splitterH'); if (forceOpen === true) { wrapper.classList.add('open'); splitter.style.display = 'block'; } else if (forceOpen === false) { wrapper.classList.remove('open'); splitter.style.display = 'none'; } else { wrapper.classList.toggle('open'); splitter.style.display = (wrapper.classList.contains('open')) ? 'block' : 'none'; } },
+                switchTab: function (tabName) { document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active')); document.getElementById(`btn-${tabName}`).classList.add('active'); document.querySelectorAll('.terminal-content').forEach(con => con.classList.remove('active')); document.getElementById(`tab-${tabName}`).classList.add('active'); },
                 showErrorTab: function () { this.toggle(true); this.switchTab('system'); },
-                logSystem: function (msg, type) {
-                    const container = document.getElementById('systemLogContainer');
-                    const item = document.createElement('div');
-                    const time = new Date().toLocaleTimeString();
-                    item.className = `log-item ${type}`;
-                    item.innerHTML = `<span class="log-time">[${time}]</span> ${msg}`;
-                    container.appendChild(item);
-                    container.scrollTop = container.scrollHeight;
-                    if (type === 'error') { this.errorCount++; this.updateErrorCount(); }
-                },
-                logConsole: function (args) {
-                    const container = document.getElementById('consoleLogContainer');
-                    const item = document.createElement('div');
-                    item.className = 'log-item info';
-                    const text = Array.from(args).map(arg => { if (typeof arg === 'object') return JSON.stringify(arg); return String(arg); }).join(' ');
-                    item.innerText = text;
-                    container.appendChild(item);
-                    container.scrollTop = container.scrollHeight;
-                },
-                evalInput: function () {
-                    const input = document.getElementById('consoleInput');
-                    const code = input.value;
-                    if (!code.trim()) return;
-
-                    this.history.push(code);
-                    this.historyIndex = this.history.length;
-
-                    this.logConsole([`> ${code}`]);
-                    try { const result = window.eval(code); if (result !== undefined) this.logConsole([`< ${result}`]); }
-                    catch (e) { this.logConsole([`Error: ${e.message}`]); }
-                    input.value = '';
-                },
-                updateErrorCount: function () {
-                    const el = document.getElementById('statusError');
-                    el.innerText = `ⓧ ${this.errorCount}`;
-                    if (this.errorCount > 0) el.classList.add('has-error');
-                    else el.classList.remove('has-error');
-                },
-                clearError: function () {
-                    this.errorCount = 0;
-                    this.updateErrorCount();
-                }
+                logSystem: function (msg, type) { const container = document.getElementById('systemLogContainer'); const item = document.createElement('div'); const time = new Date().toLocaleTimeString(); item.className = `log-item ${type}`; item.innerHTML = `<span class="log-time">[${time}]</span> ${msg}`; container.appendChild(item); container.scrollTop = container.scrollHeight; if (type === 'error') { this.errorCount++; this.updateErrorCount(); } },
+                logConsole: function (args) { const container = document.getElementById('consoleLogContainer'); const item = document.createElement('div'); item.className = 'log-item info'; const text = Array.from(args).map(arg => { if (typeof arg === 'object') return JSON.stringify(arg); return String(arg); }).join(' '); item.innerText = text; container.appendChild(item); container.scrollTop = container.scrollHeight; },
+                evalInput: function () { const input = document.getElementById('consoleInput'); const code = input.value; if (!code.trim()) return; this.history.push(code); this.historyIndex = this.history.length; this.logConsole([`> ${code}`]); try { const result = window.eval(code); if (result !== undefined) this.logConsole([`< ${result}`]); } catch (e) { this.logConsole([`Error: ${e.message}`]); } input.value = ''; },
+                updateErrorCount: function () { const el = document.getElementById('statusError'); el.innerText = `ⓧ ${this.errorCount}`; if (this.errorCount > 0) el.classList.add('has-error'); else el.classList.remove('has-error'); },
+                clearError: function () { this.errorCount = 0; this.updateErrorCount(); }
             },
             bot: {
-                activeFunction: null,
-                initHook: function () {
-                    console.log = function (...args) {
-                        nativeConsoleLog.apply(console, args);
-                        Simulator.terminal.logConsole(args);
-                    };
-
-                    window.send = function (msg) {
-                        Simulator.ui.simulateUserSend(msg);
-                        return `Sent: "${msg}"`;
-                    };
-                },
-                compile: function () {
-                    Simulator.terminal.clearError();
-                    const code = Simulator.editor.getValue();
-                    try {
-                        window.eval(code);
-                        if (typeof response !== 'function') throw new Error("response 함수가 없습니다.");
-                        this.activeFunction = response;
-                        Simulator.terminal.logSystem("✅ 코드가 성공적으로 적용되었습니다.", "system");
-                    } catch (e) {
-                        console.error(e);
-                        Simulator.terminal.logSystem(`컴파일 에러: ${e.message}`, "error");
-                    }
-                },
-                run: function (room, msg, sender, isGroupChat) {
-                    if (!this.activeFunction) { Simulator.terminal.logSystem("봇 코드가 준비되지 않았습니다.", "error"); return; }
-                    const replier = { reply: function (text) { setTimeout(() => Simulator.ui.appendMsg(text, 'bot'), 100); } };
-                    window.room = room; window.msg = msg; window.sender = sender; window.isGroupChat = isGroupChat; window.replier = replier;
-                    try { this.activeFunction(room, msg, sender, isGroupChat, replier, null, null); }
-                    catch (e) { Simulator.terminal.logSystem(`런타임 에러: ${e.message}`, "error"); }
-                }
+                activeFunction: null, isExecuting: false,
+                initHook: function () { console.log = function (...args) { nativeConsoleLog.apply(console, args); Simulator.terminal.logConsole(args); }; window.send = function (msg) { if (Simulator.bot.isExecuting) throw new Error("send() 함수는 에디터 내부(response)에서 사용할 수 없습니다. (무한 루프 방지)"); Simulator.ui.simulateUserSend(msg); return `Sent: "${msg}"`; }; },
+                compile: function () { Simulator.terminal.clearError(); const code = Simulator.editor.getValue(); try { window.eval(code); if (typeof response !== 'function') throw new Error("response 함수가 없습니다."); this.activeFunction = response; Simulator.terminal.logSystem("✅ 코드가 성공적으로 적용되었습니다.", "system"); } catch (e) { console.error(e); Simulator.terminal.logSystem(`컴파일 에러: ${e.message}`, "error"); } },
+                run: function (room, msg, sender, isGroupChat) { if (!this.activeFunction) { Simulator.terminal.logSystem("봇 코드가 준비되지 않았습니다.", "error"); return; } const replier = { reply: function (text) { setTimeout(() => Simulator.ui.appendMsg(text, 'bot'), 100); } }; window.room = room; window.msg = msg; window.sender = sender; window.isGroupChat = isGroupChat; window.replier = replier; this.isExecuting = true; try { this.activeFunction(room, msg, sender, isGroupChat, replier, null, null); } catch (e) { Simulator.terminal.logSystem(`런타임 에러: ${e.message}`, "error"); } finally { this.isExecuting = false; } }
             }
         };
 
-        window.onload = function () {
-            Simulator.layout.init();
-            Simulator.editor.init("codeEditor", "bot-logic");
-            Simulator.terminal.init();
-            Simulator.bot.initHook();
-            Simulator.bot.compile();
-        };
+        window.onload = function () { Simulator.layout.init(); Simulator.editor.init("codeEditor", "bot-logic"); Simulator.terminal.init(); Simulator.bot.initHook(); Simulator.bot.compile(); };
 
         document.addEventListener('keydown', function (e) {
-            if ((e.ctrlKey && e.key === 's') || e.key === 'F5') {
+            if ((e.ctrlKey && e.key === 's') || e.key === 'F5') { e.preventDefault(); Simulator.bot.compile(); }
+            if (e.ctrlKey && (e.key === '`' || e.code === 'Backquote')) {
                 e.preventDefault();
-                Simulator.bot.compile();
+                Simulator.terminal.toggle();
             }
         });
     </script>
